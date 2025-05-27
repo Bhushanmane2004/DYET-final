@@ -2,17 +2,15 @@
 import { useState } from "react";
 import Navbar from "./(comp)/navbar";
 import Sidebar from "./(comp)/sidebar";
-import Dashboard from "./(comp)/dashboard";
-
-import EngineeringNewsFeed from "./(comp)/newfeed";
 import { Menu } from "lucide-react";
 import Courses from "./(courses)/courses";
 import UploadNotes from "./(courses)/uploadcourse";
 import AdminPanel from "./(comp)/admin-report";
 import StudentDashboard from "./(comp)/Student-report";
+import Exams from "../admin/(comp)/exma";
 
 export default function RootLayout() {
-  const [activeButton, setActiveButton] = useState("Dashboard");
+  const [activeButton, setActiveButton] = useState("Courses");
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
@@ -21,14 +19,12 @@ export default function RootLayout() {
 
   const renderContent = () => {
     switch (activeButton) {
-      case "Dashboard":
-        return <Dashboard />;
       case "Courses":
         return <Courses />;
       case "Study Lists":
         return <UploadNotes />;
-      case "Newsfeed":
-        return <EngineeringNewsFeed />;
+      case "Competitive Exam":
+        return <Exams />;
       case "Admin":
         return <AdminPanel />;
       case "My Acitivity":

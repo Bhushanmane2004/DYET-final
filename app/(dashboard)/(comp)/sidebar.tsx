@@ -1,11 +1,5 @@
 import {
-  Home,
   BookOpen,
-  List,
-  Newspaper,
-  MessagesSquare,
-  Users,
-  Briefcase,
   X,
 } from "lucide-react";
 
@@ -47,12 +41,7 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
         </div>
 
         <nav className="mt-5 flex-1 space-y-4 md:space-y-6 overflow-y-auto">
-          <NavItem
-            icon={<Home size={20} />}
-            label="Dashboard"
-            setActiveButton={setActiveButton}
-            onClose={onClose}
-          />
+          
           <NavItem
             icon={<BookOpen size={20} />}
             label="Courses"
@@ -60,49 +49,24 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
             onClose={onClose}
           />
           <NavItem
-            icon={<List size={20} />}
-            label="Study Lists"
+            icon={<BookOpen size={20} />}
+            label="Competitive Exam"
             setActiveButton={setActiveButton}
             onClose={onClose}
           />
-          <NavItem
-            icon={<Newspaper size={20} />}
-            label="Newsfeed"
-            setActiveButton={setActiveButton}
-            onClose={onClose}
-          />
-          <NavItem
-            icon={<MessagesSquare size={20} />}
-            label="Admin"
-            setActiveButton={setActiveButton}
-            onClose={onClose}
-          />
+         
+         
+         
           <NavItem
             icon={<Users size={20} />}
             label="My Acitivity"
             setActiveButton={setActiveButton}
             onClose={onClose}
           />
-          <NavItem
-            icon={<Briefcase size={20} />}
-            label="Career Corner"
-            setActiveButton={setActiveButton}
-            onClose={onClose}
-          />
+          
         </nav>
 
-        {/* Log Out Button */}
-        <div className="mt-auto pb-4">
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded-lg w-full hover:bg-blue-600 transition-colors"
-            onClick={() => {
-              setActiveButton("Log Out");
-              onClose();
-            }}
-          >
-            Log Out
-          </button>
-        </div>
+        
       </aside>
     </>
   );

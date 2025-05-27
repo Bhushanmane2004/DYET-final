@@ -1,13 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle } from 'lucide-react';
 
-interface QuizQuestion {
-  question: string;
-  options: string[];
-  correctAnswer: string;
-}
+
 
 interface QuizProps {
   unitTitle: string;

@@ -42,3 +42,16 @@ export const uploadToCloudinary = async (
       .end(fileBuffer);
   });
 };
+
+export const deleteFromCloudinary = async (publicId: string): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.destroy(publicId, { resource_type: "raw" }, (error, result) => {
+      if (error) {
+        console.error("Cloudinary delete error:", error);
+        reject(new Error(`Failed to delete from Cloudinary: ${error.message}`));
+      } else {
+        resolve(result);
+      }
+    });
+  });
+};

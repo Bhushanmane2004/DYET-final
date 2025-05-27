@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "../(lib)/mongodb";
 import Course from "../(model)/Course";
-import { uploadToCloudinary } from "../(lib)/cloudinary";
+import { uploadToCloudinary, deleteFromCloudinary } from "../(lib)/cloudinary";
 import axios from "axios";
 import { PdfReader } from "pdfreader";
 
@@ -324,6 +324,143 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         message: "Error fetching courses",
+        error: (error as Error).message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT endpoint to update a unit's notes and quiz
+export async function PUT(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const formData = await req.formData();
+    const year = formData.get("year") as string;
+    const branch = formData.get("branch") as string;
+    const subject = formData.get("subject") as string;
+    const unitNumber = parseInt(formData.get("unitNumber") as string);
+    const notesFile = formData.get("notesFile") as File | null;
+    const quiz = JSON.parse(formData.get("quiz") as string);
+
+    if (!year || !branch || !subject || isNaN(unitNumber)) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    }
+
+    const course = await Course.findOne({ year, branch });
+    if (!course) {
+      return NextResponse.json({ message: "Course not found" }, { status: 404 });
+    }
+
+    const subjectData = course.subjects.find((s: any) => s.name === subject);
+    if (!subjectData) {
+      return NextResponse.json({ message: "Subject not found" }, { status: 404 });
+    }
+
+    const unit = subjectData.units.find((u: any) => u.unitNumber === unitNumber);
+    if (!unit) {
+      return NextResponse.json({ message: "Unit not found" }, { status: 404 });
+    }
+
+    // Handle notes file update
+    if (notesFile) {
+      const notesFileBuffer = Buffer.from(await notesFile.arrayBuffer());
+      const folderPath = `engineering-notes/${year
+        .replace(/\s+/g, "-")
+        .toLowerCase()}/${branch.replace(/\s+/g, "-").toLowerCase()}`;
+      const fileName = `${subject
+        .replace(/\s+/g, "-")
+        .toLowerCase()}-unit-${unitNumber}-${Date.now()}`;
+
+      // Delete old file from Cloudinary
+      if (unit.publicId) {
+        await deleteFromCloudinary(unit.publicId);
+      }
+
+      // Upload new file
+      const uploadResult = await uploadToCloudinary(notesFileBuffer, folderPath, fileName);
+      if (!uploadResult || !uploadResult.url || !uploadResult.public_id) {
+        throw new Error("Invalid upload result");
+      }
+
+      unit.notesFileUrl = uploadResult.url;
+      unit.publicId = uploadResult.public_id;
+
+      // Regenerate summary
+      const pdfText = await extractTextFromPDF(notesFileBuffer);
+      unit.summary = await generateContent(pdfText, "summary");
+    }
+
+    // Update quiz if provided
+    if (quiz && Array.isArray(quiz)) {
+      unit.quiz = quiz.filter(
+        (item: any) =>
+          item.question &&
+          typeof item.question === "string" &&
+          item.options &&
+          Array.isArray(item.options) &&
+          item.answer &&
+          typeof item.answer === "string"
+      );
+    }
+
+    await course.save();
+
+    return NextResponse.json(
+      { message: "Unit updated successfully", unit },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating unit:", error);
+    return NextResponse.json(
+      {
+        message: "Error updating unit",
+        error: (error as Error).message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE endpoint to delete a unit
+export async function DELETE(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { year, branch, subject, unitNumber } = await req.json();
+
+    if (!year || !branch || !subject || isNaN(unitNumber)) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    }
+
+    const course = await Course.findOne({ year, branch });
+    if (!course) {
+      return NextResponse.json({ message: "Course not found" }, { status: 404 });
+    }
+
+    const subjectData = course.subjects.find((s: any) => s.name === subject);
+    if (!subjectData) {
+      return NextResponse.json({ message: "Subject not found" }, { status: 404 });
+    }
+
+    const unitIndex = subjectData.units.findIndex((u: any) => u.unitNumber === unitNumber);
+    if (unitIndex === -1) {
+      return NextResponse.json({ message: "Unit not found" }, { status: 404 });
+    }
+
+    const unit = subjectData.units[unitIndex];
+    if (unit.publicId) {
+      await deleteFromCloudinary(unit.publicId);
+    }
+
+    subjectData.units.splice(unitIndex, 1);
+    await course.save();
+
+    return NextResponse.json({ message: "Unit deleted successfully" }, { status: 200 });
+  } catch (error) {
+    console.error("Error deleting unit:", error);
+    return NextResponse.json(
+      {
+        message: "Error deleting unit",
         error: (error as Error).message,
       },
       { status: 500 }

@@ -28,12 +28,7 @@ import {
   Library,
   Bookmark,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 
