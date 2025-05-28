@@ -63,9 +63,15 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
             setActiveButton={setActiveButton}
             onClose={onClose}
           />
+           <NavItem
+            icon={<Newspaper size={20} />}
+            label="Competitive Exam"
+            setActiveButton={setActiveButton}
+            onClose={onClose}
+          />
           <NavItem
             icon={<Newspaper size={20} />}
-            label="Newsfeed"
+            label="Competitive Exam Upload"
             setActiveButton={setActiveButton}
             onClose={onClose}
           />
@@ -79,17 +85,7 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
         </nav>
 
         {/* Log Out Button */}
-        <div className="mt-auto pb-4">
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded-lg w-full hover:bg-blue-600 transition-colors"
-            onClick={() => {
-              setActiveButton("Log Out");
-              onClose();
-            }}
-          >
-            Log Out
-          </button>
-        </div>
+      
       </aside>
     </>
   );

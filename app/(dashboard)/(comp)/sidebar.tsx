@@ -1,7 +1,5 @@
-import {
-  BookOpen,
-  X,
-} from "lucide-react";
+import Image from "next/image";
+import { BookOpen, Users, X } from "lucide-react";
 
 interface SidebarProps {
   setActiveButton: (name: string) => void;
@@ -15,7 +13,7 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0  bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 bg-opacity-50 z-40 md:hidden"
           onClick={onClose}
         />
       )}
@@ -29,7 +27,7 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
       >
         <div className="flex justify-between items-center">
           <h2 className="text-xl md:text-2xl font-bold text-blue-600">
-            <img src="/logo.png" width="50px" />
+            <Image src="/logo.png" alt="Logo" width={50} height={50} />
           </h2>
           <button
             onClick={onClose}
@@ -41,7 +39,6 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
         </div>
 
         <nav className="mt-5 flex-1 space-y-4 md:space-y-6 overflow-y-auto">
-          
           <NavItem
             icon={<BookOpen size={20} />}
             label="Courses"
@@ -54,19 +51,13 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
             setActiveButton={setActiveButton}
             onClose={onClose}
           />
-         
-         
-         
           <NavItem
             icon={<Users size={20} />}
             label="My Acitivity"
             setActiveButton={setActiveButton}
             onClose={onClose}
           />
-          
         </nav>
-
-        
       </aside>
     </>
   );

@@ -1,5 +1,8 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import Navbar from "./(comp)/navbar";
 import Sidebar from "./(comp)/sidebar";
 import { Menu } from "lucide-react";
@@ -10,8 +13,17 @@ import StudentDashboard from "./(comp)/Student-report";
 import Exams from "../admin/(comp)/exma";
 
 export default function RootLayout() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+
   const [activeButton, setActiveButton] = useState("Courses");
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded && !user) {
+      router.replace("/"); // Redirect to home if not logged in
+    }
+  }, [isLoaded, user, router]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
@@ -35,6 +47,10 @@ export default function RootLayout() {
         return <h1 className="text-3xl font-bold">Welcome!</h1>;
     }
   };
+
+  if (!isLoaded || !user) {
+    return <div className="text-center w-full p-10">Loading...</div>;
+  }
 
   return (
     <div className="flex flex-col md:flex-row w-full min-h-screen bg-gray-50">
@@ -63,7 +79,7 @@ export default function RootLayout() {
 
         {/* Main content area */}
         <main className="flex-1 p-4 pt-20 md:pt-16 md:ml-64">
-          <div className=" p-4 md:p-6  w-full">{renderContent()}</div>
+          <div className="p-4 md:p-6 w-full">{renderContent()}</div>
         </main>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IStudentActivity extends Document {
+export interface IExamStudentActivity extends Document {
   userId: string;
   userName: string;
   exam: string;
@@ -15,28 +15,13 @@ export interface IStudentActivity extends Document {
   timestamp: Date;
 }
 
-const StudentActivitySchema = new Schema(
+const ExamStudentActivitySchema = new Schema(
   {
-    userId: {
-      type: String,
-      required: true,
-    },
-    userName: {
-      type: String,
-      required: true,
-    },
-    exam: {
-      type: String,
-      required: true,
-    },
-    subject: {
-      type: String,
-      required: true,
-    },
-    chapterNumber: {
-      type: Number,
-      required: true,
-    },
+    userId: { type: String, required: true },
+    userName: { type: String, required: true },
+    exam: { type: String, required: true },
+    subject: { type: String, required: true },
+    chapterNumber: { type: Number, required: true },
     activityType: {
       type: String,
       enum: ["notes_access", "quiz_submission"],
@@ -47,18 +32,13 @@ const StudentActivitySchema = new Schema(
       totalQuestions: { type: Number },
       answers: { type: Map, of: String },
     },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
+    timestamp: { type: Date, default: Date.now },
   },
-  {
-    timestamps: false,
-  }
+  { timestamps: false }
 );
 
-const StudentActivity =
-  mongoose.models.StudentActivity ||
-  mongoose.model<IStudentActivity>("StudentActivity", StudentActivitySchema);
+const ExamStudentActivity =
+  mongoose.models.ExamStudentActivity ||
+  mongoose.model<IExamStudentActivity>("ExamStudentActivity", ExamStudentActivitySchema);
 
-export default StudentActivity;
+export default ExamStudentActivity;
