@@ -276,7 +276,7 @@ export async function GET(req: NextRequest) {
     const courses = await Course.find(query);
 
     if (quizOnly && subjectName) {
-      const quizzes = [];
+      const quizzes: any[] = [];
       for (const course of courses) {
         const matchedSubject = course.subjects.find(
           (subject: any) => subject.name === subjectName

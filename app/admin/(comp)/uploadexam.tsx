@@ -502,11 +502,10 @@ export default function UploadExamPage() {
                             className="hidden"
                             accept=".pdf,.doc,.docx,.ppt,.pptx"
                             onChange={handleFileChange(subjectIndex, chapterIndex)}
-                            ref={(el) =>
-                              (fileInputRefs.current[
-                                `notes-file-${subjectIndex}-${chapterIndex}`
-                              ] = el)
-                            }
+                           ref={(el) => {
+  fileInputRefs.current[`notes-file-${subjectIndex}-${chapterIndex}`] = el;
+}}
+
                             disabled={
                               chapter.uploadStatus === "uploading" ||
                               chapter.uploadStatus === "success"

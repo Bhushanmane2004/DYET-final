@@ -538,11 +538,10 @@ export default function UploadPage() {
                             className="hidden"
                             accept=".pdf,.doc,.docx,.ppt,.pptx"
                             onChange={handleFileChange(subjectIndex, unitIndex)}
-                            ref={(el) =>
-                              (fileInputRefs.current[
-                                `notes-file-${subjectIndex}-${unitIndex}`
-                              ] = el)
-                            }
+                            ref={(el) => {
+  fileInputRefs.current[`notes-file-${subjectIndex}-${unitIndex}`] = el;
+  return undefined; // 👈 satisfies TypeScript's expected return type
+}}
                             disabled={
                               unit.uploadStatus === "uploading" ||
                               unit.uploadStatus === "success"
