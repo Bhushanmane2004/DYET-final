@@ -8,7 +8,7 @@ import Navbar from "../(dashboard)/(comp)/navbar";
 import UploadPage from "../(dashboard)/(courses)/uploadcourse";
 import QuizManager from "./(comp)/admin-update";
 import UploadExamPage from "./(comp)/uploadexam";
-import Exams from "./(comp)/exma";
+import Exams from "./(comp)/adminexamupdated";
 import AdminPanel from "../(dashboard)/(comp)/admin-report";
 import { useRouter } from "next/navigation";
 

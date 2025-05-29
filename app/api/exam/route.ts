@@ -1,11 +1,13 @@
+// File: /api/notes.ts
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "../(lib)/mongodb";
 import Exam from "../(model)/Exam";
+import ExamStudentActivity from "../(model)/studentexam"; // Import the ExamStudentActivity model
 import { uploadToCloudinary, deleteFromCloudinary } from "../(lib)/cloudinary";
 import axios from "axios";
 import { PdfReader } from "pdfreader";
 
-const API_KEY = "AIzaSyCIFxqaCGYGBy3YJZFKMKVgMguOMBIX1k0"; // Replace with your Gemini API key
+const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCIFxqaCGYGBy3YJZFKMKVgMguOMBIX1k0"; // Use environment variable for security
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
 // Helper function to extract text from PDF
@@ -14,7 +16,7 @@ const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => {
     let extractedText = "";
     new PdfReader().parseBuffer(pdfBuffer, (err, item) => {
       if (err) {
-        reject(`Error reading PDF: ${err}`);
+        reject(`Error reading PDF: ${err.message}`);
       } else if (!item) {
         resolve(extractedText.trim());
       } else if (item.text) {
@@ -51,7 +53,7 @@ const generateContent = async (text: string, type: "summary" | "quiz"): Promise<
       .join(" ");
     return combinedText;
   } catch (error: any) {
-    console.error(`Failed to generate ${type}:`, error);
+    console.error(`Failed to generate ${type}:`, error.message);
     return type === "summary"
       ? "Summary generation failed."
       : JSON.stringify({
@@ -91,6 +93,7 @@ const parseQuizData = (quizData: string): any[] => {
         typeof item.question === "string" &&
         item.options &&
         Array.isArray(item.options) &&
+        item.options.length >= 2 &&
         item.answer &&
         typeof item.answer === "string"
       );
@@ -110,12 +113,12 @@ export async function POST(req: NextRequest) {
     const subjects = JSON.parse(formData.get("subjects") as string);
 
     if (!exam || !subjects || !Array.isArray(subjects)) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ message: "Missing required fields: exam or subjects" }, { status: 400 });
     }
 
     const processedSubjects = await Promise.all(
       subjects.map(async (subject: any, subjectIndex: number) => {
-        if (!subject.name.trim() || !subject.chapters.length) {
+        if (!subject.name?.trim() || !subject.chapters?.length) {
           console.warn(`Skipping subject ${subject.name} due to missing name or chapters`);
           return null;
         }
@@ -249,7 +252,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         message: "Error saving exam",
-        error: (error as Error).message,
+        error: (error as Error).message || "Unknown error",
       },
       { status: 500 }
     );
@@ -273,7 +276,6 @@ export async function GET(req: NextRequest) {
 
     if (quizOnly && subjectName) {
       const quizzes: any[] = [];
-
       for (const exam of exams) {
         const matchedSubject = exam.subjects.find((subject: any) => subject.name === subjectName);
         if (matchedSubject) {
@@ -320,7 +322,10 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Error fetching exams:", error);
     return NextResponse.json(
-      { message: "Error fetching exams", error: (error as Error).message },
+      {
+        message: "Error fetching exams",
+        error: (error as Error).message || "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -335,22 +340,29 @@ export async function PUT(req: NextRequest) {
     const subject = formData.get("subject") as string;
     const chapterNumber = parseInt(formData.get("chapterNumber") as string);
     const notesFile = formData.get("notesFile") as File | null;
-    const quiz = JSON.parse(formData.get("quiz") as string);
+    const quizString = formData.get("quiz") as string;
 
+    // Validate required fields
     if (!exam || !subject || isNaN(chapterNumber)) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Missing required fields: exam, subject, or chapterNumber" },
+        { status: 400 }
+      );
     }
 
+    // Find the exam
     const examData = await Exam.findOne({ exam });
     if (!examData) {
       return NextResponse.json({ message: "Exam not found" }, { status: 404 });
     }
 
+    // Find the subject
     const subjectData = examData.subjects.find((s: any) => s.name === subject);
     if (!subjectData) {
       return NextResponse.json({ message: "Subject not found" }, { status: 404 });
     }
 
+    // Find the chapter
     const chapter = subjectData.chapters.find((c: any) => c.chapterNumber === chapterNumber);
     if (!chapter) {
       return NextResponse.json({ message: "Chapter not found" }, { status: 404 });
@@ -366,38 +378,62 @@ export async function PUT(req: NextRequest) {
         .replace(/\s+/g, "-")
         .toLowerCase()}-chapter-${chapterNumber}-${Date.now()}`;
 
-      // Delete old file from Cloudinary
+      // Delete old file from Cloudinary if it exists
       if (chapter.publicId) {
-        await deleteFromCloudinary(chapter.publicId);
+        try {
+          await deleteFromCloudinary(chapter.publicId);
+        } catch (error) {
+          console.error(`Failed to delete old file from Cloudinary: ${chapter.publicId}`, error);
+        }
       }
 
-      // Upload new file
+      // Upload new file to Cloudinary
       const uploadResult = await uploadToCloudinary(notesFileBuffer, folderPath, fileName);
       if (!uploadResult || !uploadResult.url || !uploadResult.public_id) {
-        throw new Error("Invalid upload result");
+        throw new Error("Invalid upload result from Cloudinary");
       }
 
       chapter.notesFileUrl = uploadResult.url;
       chapter.publicId = uploadResult.public_id;
 
-      // Regenerate summary
-      const pdfText = await extractTextFromPDF(notesFileBuffer);
-      chapter.summary = await generateContent(pdfText, "summary");
+      // Regenerate summary from new PDF
+      try {
+        const pdfText = await extractTextFromPDF(notesFileBuffer);
+        chapter.summary = await generateContent(pdfText, "summary");
+      } catch (error) {
+        console.error("Failed to regenerate summary:", error);
+        chapter.summary = "Summary generation failed.";
+      }
     }
 
     // Update quiz if provided
-    if (quiz && Array.isArray(quiz)) {
-      chapter.quiz = quiz.filter(
-        (item: any) =>
-          item.question &&
-          typeof item.question === "string" &&
-          item.options &&
-          Array.isArray(item.options) &&
-          item.answer &&
-          typeof item.answer === "string"
-      );
+    if (quizString) {
+      try {
+        const quiz = JSON.parse(quizString);
+        if (Array.isArray(quiz)) {
+          chapter.quiz = quiz.filter(
+            (item: any) =>
+              item.question &&
+              typeof item.question === "string" &&
+              item.options &&
+              Array.isArray(item.options) &&
+              item.options.length >= 2 &&
+              item.answer &&
+              typeof item.answer === "string"
+          );
+        } else {
+          console.warn("Quiz data is not an array:", quiz);
+        }
+      } catch (error) {
+        console.error("Error parsing quiz data:", error);
+        return NextResponse.json(
+          { message: "Invalid quiz data format" },
+          { status: 400 }
+        );
+      }
     }
 
+    // Save the updated exam
     await examData.save();
 
     return NextResponse.json(
@@ -409,7 +445,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(
       {
         message: "Error updating chapter",
-        error: (error as Error).message,
+        error: (error as Error).message || "Unknown error",
       },
       { status: 500 }
     );
@@ -420,44 +456,87 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     await connectToDatabase();
-    const { exam, subject, chapterNumber } = await req.json();
+    const body = await req.json();
+    const { exam, subject, chapterNumber } = body;
 
+    // Validate required fields
     if (!exam || !subject || isNaN(chapterNumber)) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+      console.error("DELETE request failed: Missing required fields", { exam, subject, chapterNumber });
+      return NextResponse.json(
+        { message: "Missing required fields: exam, subject, or chapterNumber" },
+        { status: 400 }
+      );
     }
 
+    // Find the exam
     const examData = await Exam.findOne({ exam });
     if (!examData) {
-      return NextResponse.json({ message: "Exam not found" }, { status: 404 });
+      console.error(`Exam not found: ${exam}`);
+      return NextResponse.json({ message: `Exam '${exam}' not found` }, { status: 404 });
     }
 
+    // Find the subject
     const subjectData = examData.subjects.find((s: any) => s.name === subject);
     if (!subjectData) {
-      return NextResponse.json({ message: "Subject not found" }, { status: 404 });
+      console.error(`Subject not found: ${subject} in exam: ${exam}`);
+      return NextResponse.json({ message: `Subject '${subject}' not found` }, { status: 404 });
     }
 
+    // Find the chapter index
     const chapterIndex = subjectData.chapters.findIndex(
-      (c: any) => c.chapterNumber === chapterNumber
+      (c: any) => c.chapterNumber === Number(chapterNumber)
     );
     if (chapterIndex === -1) {
-      return NextResponse.json({ message: "Chapter not found" }, { status: 404 });
+      console.error(`Chapter not found: ${chapterNumber} in subject: ${subject}, exam: ${exam}`);
+      return NextResponse.json({ message: `Chapter ${chapterNumber} not found` }, { status: 404 });
     }
 
+    // Get the chapter to delete
     const chapter = subjectData.chapters[chapterIndex];
+
+    // Delete associated Cloudinary file if it exists
     if (chapter.publicId) {
-      await deleteFromCloudinary(chapter.publicId);
+      try {
+        await deleteFromCloudinary(chapter.publicId);
+        console.log(`Successfully deleted Cloudinary file: ${chapter.publicId}`);
+      } catch (error) {
+        console.error(`Failed to delete Cloudinary file: ${chapter.publicId}`, error);
+        // Continue with deletion even if Cloudinary fails to avoid blocking
+      }
     }
 
+    // Remove the chapter from the subject
     subjectData.chapters.splice(chapterIndex, 1);
+
+    // Optionally, clean up related student activity records
+    try {
+      await ExamStudentActivity.deleteMany({
+        exam,
+        subject,
+        chapterNumber,
+      });
+      console.log(`Deleted student activity records for exam: ${exam}, subject: ${subject}, chapter: ${chapterNumber}`);
+    } catch (error) {
+      console.warn(`Failed to delete student activity records for exam: ${exam}, subject: ${subject}, chapter: ${chapterNumber}`, error);
+      // Continue with chapter deletion even if activity cleanup fails
+    }
+
+    // Save the updated exam
     await examData.save();
 
-    return NextResponse.json({ message: "Chapter deleted successfully" }, { status: 200 });
+    return NextResponse.json(
+      { message: "Chapter deleted successfully" },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Error deleting chapter:", error);
+    console.error("Error deleting chapter:", {
+      error: (error as Error).message || "Unknown error",
+      stack: (error as Error).stack,
+    });
     return NextResponse.json(
       {
         message: "Error deleting chapter",
-        error: (error as Error).message,
+        error: (error as Error).message || "Unknown error",
       },
       { status: 500 }
     );
