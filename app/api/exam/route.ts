@@ -16,7 +16,7 @@ const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => {
     let extractedText = "";
     new PdfReader().parseBuffer(pdfBuffer, (err, item) => {
       if (err) {
-        reject(`Error reading PDF: ${err.message}`);
+        reject(`Error reading PDF: ${err}`);
       } else if (!item) {
         resolve(extractedText.trim());
       } else if (item.text) {
