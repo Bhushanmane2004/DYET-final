@@ -16,7 +16,7 @@ export default function RootLayout() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
 
-  const [activeButton, setActiveButton] = useState("Dashboard");
+  const [activeButton, setActiveButton] = useState("Admin");
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -34,8 +34,7 @@ export default function RootLayout() {
 
   const renderContent = () => {
     switch (activeButton) {
-      case "Dashboard":
-        return <h1 className="text-3xl font-bold">Admin Dashboard</h1>;
+      
       case "Courses":
         return <QuizManager />;
       case "Upload Notes":

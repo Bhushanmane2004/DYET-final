@@ -33,7 +33,7 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
       >
         <div className="flex justify-between items-center">
           <h2 className="text-xl md:text-2xl font-bold text-blue-600">
-            <img src="/logo.png" width="50px" />
+            <img src="/logo.jpg" width="150px" />
           </h2>
           <button
             onClick={onClose}
@@ -45,12 +45,7 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
         </div>
 
         <nav className="mt-5 flex-1 space-y-4 md:space-y-6 overflow-y-auto">
-          <NavItem
-            icon={<Home size={20} />}
-            label="Dashboard"
-            setActiveButton={setActiveButton}
-            onClose={onClose}
-          />
+         
           <NavItem
             icon={<BookOpen size={20} />}
             label="Courses"

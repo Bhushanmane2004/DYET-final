@@ -6,6 +6,8 @@ import { Loader2, BookOpen, FileQuestion, Edit, Trash2, X } from "lucide-react";
 import CourseSelectorGrid from "@/app/(dashboard)/(comp)/CourseSelectorGrid";
 import NotesViewer from "@/app/(dashboard)/(comp)/NotesViewer";
 import QuizSection from "@/app/(dashboard)/(comp)/QuizSection";
+import { toast, Toaster } from "sonner";
+
 
 interface Unit {
   unitNumber: number;
@@ -215,7 +217,7 @@ export default function Courses() {
       }
     } catch (error) {
       console.error("Error logging quiz submission:", error);
-      alert("Failed to submit quiz. Please try again.");
+      toast.error("Failed to submit quiz. Please try again.");
       return;
     }
 
@@ -229,7 +231,7 @@ export default function Courses() {
 
   const handleUpdateUnit = async () => {
     if (!newNotesFile && updatedQuiz.length === 0) {
-      alert("Please provide a new notes file or update the quiz.");
+      toast.success("Please provide a new notes file or update the quiz.");
       return;
     }
 
@@ -251,13 +253,13 @@ export default function Courses() {
       if (!response.ok) {
         throw new Error("Failed to update unit");
       }
-      alert("Unit updated successfully!");
+      toast.success("Unit updated successfully!");
       setIsUpdateModalOpen(false);
       setNewNotesFile(null);
       fetchSubjects(selectedYear, selectedBranch);
     } catch (error) {
       console.error("Error updating unit:", error);
-      alert("Failed to update unit. Please try again.");
+      toast.error("Failed to update unit. Please try again.");
     }
   };
 
@@ -278,7 +280,7 @@ export default function Courses() {
       if (!response.ok) {
         throw new Error("Failed to delete unit");
       }
-      alert("Unit deleted successfully!");
+      toast.success("Unit deleted successfully!");
       setSelectedUnit("");
       setSelectedUnitData(null);
       setQuiz([]);
@@ -286,7 +288,7 @@ export default function Courses() {
       fetchSubjects(selectedYear, selectedBranch);
     } catch (error) {
       console.error("Error deleting unit:", error);
-      alert("Failed to delete unit. Please try again.");
+      toast.error("Failed to delete unit. Please try again.");
     }
   };
 
@@ -576,6 +578,7 @@ export default function Courses() {
           )}
         </div>
       </div>
+      <Toaster richColors /> 
     </div>
   );
 }

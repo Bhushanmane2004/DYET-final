@@ -27,7 +27,7 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
       >
         <div className="flex justify-between items-center">
           <h2 className="text-xl md:text-2xl font-bold text-blue-600">
-            <Image src="/logo.png" alt="Logo" width={50} height={50} />
+            <Image src="/logo.jpg" alt="Logo" width={150} height={150} />
           </h2>
           <button
             onClick={onClose}
